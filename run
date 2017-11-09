@@ -1,0 +1,1 @@
+go install && time ~/go/bin/pullall $@
