@@ -1,11 +1,11 @@
 package main
 
-import(
-  "sync"
+import (
+	"sync"
 )
 
 const appname = "pullall"
-const appversion = "0.0.9"
+const appversion = "0.1.0"
 
 var termWidth int
 var gitdirs []string

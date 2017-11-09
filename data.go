@@ -1,7 +1,7 @@
 package main
 
 type Result struct {
-  pullSuccess  bool
-  pullOutput   []byte
-  statusOutput []byte
+	pullSuccess  bool
+	pullOutput   []byte
+	statusOutput []byte
 }
