@@ -5,9 +5,17 @@ import (
 )
 
 const appname = "pullall"
-const appversion = "0.1.0"
+const appversion = "0.1.1"
 
-var termWidth int
-var gitdirs []string
-var wg sync.WaitGroup
-var lock = sync.RWMutex{}
+type Result struct {
+	pullSuccess  bool
+	pullOutput   []byte
+	statusOutput []byte
+}
+
+var (
+	termWidth int
+	gitdirs   []string
+	wg        sync.WaitGroup
+	lock      = sync.RWMutex{}
+)
