@@ -5,7 +5,7 @@ import (
 )
 
 const appname = "pullall"
-const appversion = "0.1.1"
+const appversion = "0.1.2"
 
 type Result struct {
 	pullSuccess  bool

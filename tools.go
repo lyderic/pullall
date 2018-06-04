@@ -6,40 +6,36 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 func init() {
 	log.SetFlags(log.Lshortfile)
 }
 
-func sanitize(inputs []string) []string {
-	ln := len(inputs)
-	output := make([]string, ln)
-	for i := 0; i < ln; i++ {
-		input := inputs[i]
-		// first, we make sure we work with absolute paths
-		absoluteInput, err := filepath.Abs(input)
-		if err != nil {
-			log.Fatal(err)
+/* make sure we work with absolute paths and the symlinks are resolved */
+func sanitize(inputs []string) (output []string, err error) {
+	for _, input := range inputs {
+		var absoluteInput, resolvedsymlink, basedir string
+		if absoluteInput, err = filepath.Abs(input); err != nil {
+			return
 		}
-		resolvedsymlink, err := filepath.EvalSymlinks(absoluteInput)
-		if err != nil {
-			log.Fatal(err)
+		if resolvedsymlink, err = filepath.EvalSymlinks(absoluteInput); err != nil {
+			return
 		}
-		basedir, err := filepath.Abs(resolvedsymlink)
-		if err != nil {
-			log.Fatal(err)
+		if basedir, err = filepath.Abs(resolvedsymlink); err != nil {
+			return
 		}
-		basedirinfo, err := os.Stat(input)
-		if err != nil {
-			log.Fatal(err)
+		var basedirinfo os.FileInfo
+		if basedirinfo, err = os.Stat(input); err != nil {
+			return
 		}
 		if !basedirinfo.IsDir() {
-			log.Fatalf("Not a dir!")
+			return output, fmt.Errorf("not a dir")
 		}
-		output[i] = basedir
+		output = append(output, basedir)
 	}
-	return output
+	return
 }
 
 func printRed(message string) {
@@ -64,11 +60,7 @@ func getTermDim() (int, int) {
 }
 
 func wipeLine() {
-	fmt.Print("\r")
-	for i := 0; i < termWidth; i++ {
-		fmt.Print(" ")
-	}
-	fmt.Print("\r")
+	fmt.Printf("\r%s\r", strings.Repeat(" ", termWidth))
 }
 
 func checkBinaries(binaries ...string) {

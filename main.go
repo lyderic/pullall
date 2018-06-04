@@ -22,23 +22,26 @@ func init() {
 
 func main() {
 
+	var err error
 	var showVersion bool
 	flag.BoolVar(&showVersion, "v", false, "show version")
 	flag.BoolVar(&showVersion, "version", false, "show version")
 	flag.Parse()
 
 	if showVersion {
-		fmt.Printf("%s - v.%s (c) Lyderic Landry, London 2017\n",
+		fmt.Printf("%s - v.%s (c) Lyderic Landry, London 2018\n",
 			appname, appversion)
-		return
 	}
 
 	inputs := []string{"."}
-	if len(os.Args) > 1 {
-		inputs = os.Args[1:]
+	if len(flag.Args()) > 0 {
+		inputs = flag.Args()
 	}
 
-	basedirs := sanitize(inputs)
+	var basedirs []string
+	if basedirs, err = sanitize(inputs); err != nil {
+		log.Fatal(err)
+	}
 
 	fmt.Print("Looking for .git directories...")
 	getGitDirs(basedirs)
@@ -69,18 +72,24 @@ func main() {
 	for repodir, result := range results {
 		pullSuccess := results[repodir].pullSuccess
 		pullOut := results[repodir].pullOutput
-		statusOut := getStatus(repodir, results)
+		var statusOut []byte
+		if statusOut, err = getStatus(repodir, results); err != nil {
+			log.Fatal(err)
+		}
 		results[repodir] = Result{pullSuccess, pullOut, statusOut}
 		displayRepositoryStatus(repodir, result)
 	}
 
 }
 
-func pull(repodir string, results map[string]Result) {
+func pull(repodir string, results map[string]Result) (err error) {
 	defer os.Stdout.WriteString(".")
 	defer wg.Done()
 	pullOut, pullErr := exec.Command("git", "-C", repodir, "pull").CombinedOutput()
-	statusOut := getStatus(repodir, results)
+	var statusOut []byte
+	if statusOut, err = getStatus(repodir, results); err != nil {
+		return err
+	}
 	lock.Lock()
 	if pullErr != nil {
 		results[repodir] = Result{false, pullOut, statusOut}
@@ -88,15 +97,14 @@ func pull(repodir string, results map[string]Result) {
 		results[repodir] = Result{true, pullOut, statusOut}
 	}
 	lock.Unlock()
+	return
 }
 
-func getStatus(repodir string, results map[string]Result) []byte {
-	statusOut, statusErr := exec.Command("git", "-C", repodir, "status", "-sb").CombinedOutput()
-	if statusErr != nil {
-		log.Fatalln("Error getting status", repodir, ":",
-			statusErr, string(statusOut))
+func getStatus(repodir string, results map[string]Result) (output []byte, err error) {
+	if output, err = exec.Command("git", "-C", repodir, "status", "-sb").CombinedOutput(); err != nil {
+		return
 	}
-	return statusOut
+	return
 }
 
 func displayRepositoryStatus(repodir string, result Result) {
@@ -110,7 +118,6 @@ func displayRepositoryStatus(repodir string, result Result) {
 	for pullScanner.Scan() {
 		line := pullScanner.Text()
 		match, _ := regexp.MatchString("(?i)already up.*to.*date.*", line)
-		//if line == "Already up-to-date." || line == "Already up to date." {
 		if match {
 			continue
 		} else {
@@ -131,20 +138,23 @@ func displayRepositoryStatus(repodir string, result Result) {
 	}
 }
 
-func getGitDirs(inputs []string) {
+func getGitDirs(inputs []string) (err error) {
 	for _, input := range inputs {
-		err := filepath.Walk(input, addGitDir)
-		if err != nil {
-			log.Fatal(err)
+		if err = filepath.Walk(input, addGitDir); err != nil {
+			return
 		}
 	}
+	return
 }
 
-func addGitDir(item string, info os.FileInfo, err error) error {
-	base := path.Base(item)
-	abspath, _ := filepath.Abs(item)
+func addGitDir(item string, finfo os.FileInfo, errin error) (err error) {
+	var base, abspath string
+	base = path.Base(item)
+	if abspath, err = filepath.Abs(item); err != nil {
+		return
+	}
 	if base == ".git" {
 		gitdirs = append(gitdirs, abspath)
 	}
-	return nil
+	return
 }
