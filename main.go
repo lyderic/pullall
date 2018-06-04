@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
 	"flag"
 	"fmt"
 	"log"
@@ -10,8 +8,6 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"regexp"
-	"strings"
 )
 
 func init() {
@@ -24,13 +20,12 @@ func main() {
 
 	var err error
 	var showVersion bool
-	flag.BoolVar(&showVersion, "v", false, "show version")
-	flag.BoolVar(&showVersion, "version", false, "show version")
+	flag.BoolVar(&showVersion, "V", false, "show version")
 	flag.Parse()
 
 	if showVersion {
 		fmt.Printf("%s - v.%s (c) Lyderic Landry, London 2018\n",
-			appname, appversion)
+			APPNAME, VERSION)
 	}
 
 	inputs := []string{"."}
@@ -48,7 +43,7 @@ func main() {
 	wipeLine()
 
 	if len(gitdirs) == 0 {
-		fmt.Println("No git repository found.")
+		fmt.Println("git repository not found")
 		os.Exit(1)
 	}
 
@@ -85,16 +80,17 @@ func main() {
 func pull(repodir string, results map[string]Result) (err error) {
 	defer os.Stdout.WriteString(".")
 	defer wg.Done()
-	pullOut, pullErr := exec.Command("git", "-C", repodir, "pull").CombinedOutput()
+  var out []byte
+	out, err = exec.Command("git", "-C", repodir, "pull").CombinedOutput()
 	var statusOut []byte
 	if statusOut, err = getStatus(repodir, results); err != nil {
 		return err
 	}
 	lock.Lock()
-	if pullErr != nil {
-		results[repodir] = Result{false, pullOut, statusOut}
+	if err != nil {
+		results[repodir] = Result{false, out, statusOut}
 	} else {
-		results[repodir] = Result{true, pullOut, statusOut}
+		results[repodir] = Result{true, out, statusOut}
 	}
 	lock.Unlock()
 	return
@@ -105,37 +101,6 @@ func getStatus(repodir string, results map[string]Result) (output []byte, err er
 		return
 	}
 	return
-}
-
-func displayRepositoryStatus(repodir string, result Result) {
-	fmt.Println(repodir)
-	if !result.pullSuccess {
-		printRed("--> incorrectly pulled!")
-		return
-	}
-	pullScanner := bufio.NewScanner(bytes.NewReader(result.pullOutput))
-	statusScanner := bufio.NewScanner(bytes.NewReader(result.statusOutput))
-	for pullScanner.Scan() {
-		line := pullScanner.Text()
-		match, _ := regexp.MatchString("(?i)already up.*to.*date.*", line)
-		if match {
-			continue
-		} else {
-			printRed(line)
-		}
-	}
-	for statusScanner.Scan() {
-		line := statusScanner.Text()
-		if strings.HasPrefix(line, "##") {
-			if strings.Contains(line, "[") {
-				printRed(strings.ToUpper(line[26:]))
-			} else {
-				continue
-			}
-		} else {
-			printRed(line)
-		}
-	}
 }
 
 func getGitDirs(inputs []string) (err error) {

@@ -4,8 +4,8 @@ import (
 	"sync"
 )
 
-const appname = "pullall"
-const appversion = "0.1.2"
+const APPNAME = "pullall"
+const VERSION = "0.1.3"
 
 type Result struct {
 	pullSuccess  bool
