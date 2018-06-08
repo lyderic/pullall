@@ -80,7 +80,7 @@ func main() {
 func pull(repodir string, results map[string]Result) (err error) {
 	defer os.Stdout.WriteString(".")
 	defer wg.Done()
-  var out []byte
+	var out []byte
 	out, err = exec.Command("git", "-C", repodir, "pull").CombinedOutput()
 	var statusOut []byte
 	if statusOut, err = getStatus(repodir, results); err != nil {
