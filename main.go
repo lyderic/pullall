@@ -5,15 +5,26 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
+	"sync"
+)
+
+var (
+	termWidth int
+	gitdirs   []string
+	wg        sync.WaitGroup
+	lock      = sync.RWMutex{}
 )
 
 func init() {
 	log.SetFlags(log.Lshortfile)
 	checkBinaries("git", "stty")
-	termWidth = getTermWidth()
+	var err error
+	if termWidth, err = getTermWidth(); err != nil {
+		termWidth = 80 // to be *very* conservative
+	}
+
 }
 
 func main() {
@@ -56,6 +67,7 @@ func main() {
 		go pull(repodir, results)
 	}
 	wg.Wait()
+	// we retry the pulls that failed, sequentially this time:
 	for repodir, result := range results {
 		if result.pullSuccess == false {
 			wg.Add(1)
@@ -80,24 +92,28 @@ func main() {
 func pull(repodir string, results map[string]Result) (err error) {
 	defer os.Stdout.WriteString(".")
 	defer wg.Done()
-	var out []byte
-	out, err = exec.Command("git", "-C", repodir, "pull").CombinedOutput()
+	var pullOut []byte
+	args := []string{"pull"}
+	if pullOut, err = git(repodir, args...); err != nil {
+		return
+	}
 	var statusOut []byte
 	if statusOut, err = getStatus(repodir, results); err != nil {
-		return err
+		return
 	}
 	lock.Lock()
 	if err != nil {
-		results[repodir] = Result{false, out, statusOut}
+		results[repodir] = Result{false, pullOut, statusOut}
 	} else {
-		results[repodir] = Result{true, out, statusOut}
+		results[repodir] = Result{true, pullOut, statusOut}
 	}
 	lock.Unlock()
 	return
 }
 
 func getStatus(repodir string, results map[string]Result) (output []byte, err error) {
-	if output, err = exec.Command("git", "-C", repodir, "status", "-sb").CombinedOutput(); err != nil {
+	args := []string{"status", "-sb"}
+	if output, err = git(repodir, args...); err != nil {
 		return
 	}
 	return

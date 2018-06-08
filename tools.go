@@ -27,7 +27,7 @@ func sanitize(inputs []string) (output []string, err error) {
 			return
 		}
 		var basedirinfo os.FileInfo
-		if basedirinfo, err = os.Stat(input); err != nil {
+		if basedirinfo, err = os.Stat(input); os.IsNotExist(err) {
 			return
 		}
 		if !basedirinfo.IsDir() {
@@ -38,25 +38,33 @@ func sanitize(inputs []string) (output []string, err error) {
 	return
 }
 
+func git(repodir string, a ...string) (output []byte, err error) {
+	args := []string{"-C", repodir}
+	args = append(args, a...)
+	cmd := exec.Command("git", args...)
+	return cmd.CombinedOutput()
+}
+
 func printRed(message string) {
 	fmt.Printf("\033[31m%s\033[0m\n", message)
 }
 
-func getTermWidth() int {
-	_, w := getTermDim()
-	return w
+func getTermWidth() (w int, err error) {
+	if _, w, err = getTermDim(); err != nil {
+		return
+	}
+	return
 }
 
-func getTermDim() (int, int) {
+func getTermDim() (h, w int, err error) {
 	cmd := exec.Command("stty", "size")
 	cmd.Stdin = os.Stdin
-	termDim, err := cmd.Output()
-	if err != nil {
-		log.Fatal(err)
+	var termDim []byte
+	if termDim, err = cmd.Output(); err != nil {
+		return
 	}
-	var h, w int
 	fmt.Sscan(string(termDim), &h, &w)
-	return h, w
+	return
 }
 
 func wipeLine() {
