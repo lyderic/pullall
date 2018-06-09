@@ -88,6 +88,7 @@ func main() {
 	}
 	wg.Wait()
 
+	wipeLine()
 	less(accumulator.String())
 
 	log.Printf("Processed %d repositor%s in %s\n",
