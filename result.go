@@ -48,9 +48,13 @@ func processResult(repodir string, result Result) {
 				continue
 			}
 		} else {
-			add(red(line))
+			addln(red(line))
 		}
 	}
+}
+
+func add(message string) {
+	accumulator.WriteString(message)
 }
 
 func addln(message string) {
@@ -58,10 +62,6 @@ func addln(message string) {
 	accumulator.WriteString("\n")
 }
 
-func add(message string) {
-	accumulator.WriteString(message)
-}
-
 func red(message string) string {
-	return fmt.Sprintf("\033[31m%s\033[0m\n", message)
+	return fmt.Sprintf("\033[31m%s\033[0m", message)
 }
