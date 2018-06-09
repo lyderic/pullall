@@ -13,8 +13,8 @@ func pull(repodir string, results map[string]Result) (err error) {
 	defer os.Stdout.WriteString(".")
 	defer wg.Done()
 	var pullOut []byte
-	args := []string{"pull"}
-	if pullOut, err = git(repodir, args...); err != nil {
+	pullArgs := []string{"pull"}
+	if pullOut, err = git(repodir, pullArgs...); err != nil {
 		return
 	}
 	var statusOut []byte
@@ -31,5 +31,13 @@ func pull(repodir string, results map[string]Result) (err error) {
 	message := fmt.Sprintf("%q pulled in %s", path.Base(repodir), time.Now().Sub(start))
 	//fmt.Print(message)
 	log.Println(message)
+	return
+}
+
+func getStatus(repodir string, results map[string]Result) (output []byte, err error) {
+	args := []string{"status", "-sb"}
+	if output, err = git(repodir, args...); err != nil {
+		return
+	}
 	return
 }

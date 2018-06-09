@@ -8,8 +8,6 @@ import (
 	"strings"
 )
 
-var accumulator strings.Builder
-
 func processRepositoryStatus(repodir string, result Result) {
 	addln(repodir)
 	if !result.pullSuccess {

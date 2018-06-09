@@ -11,15 +11,17 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
 
 var (
-	termWidth int
-	gitdirs   []string
-	wg        sync.WaitGroup
-	lock      = sync.RWMutex{}
+	termWidth   int
+	gitdirs     []string
+	accumulator strings.Builder
+	wg          sync.WaitGroup
+	lock        = sync.RWMutex{}
 )
 
 func init() {
@@ -41,13 +43,10 @@ func main() {
 	flag.Parse()
 
 	var logfile *os.File
-	if logfile, err = os.Create(logpath); err != nil {
-		fmt.Printf("cannot log to %q, please choose another file with --log\n", logpath)
+	defer logfile.Close()
+	if err = initlog(logfile, logpath); err != nil {
 		log.Fatal(err)
 	}
-	defer logfile.Close()
-	log.SetOutput(logfile)
-	log.SetFlags(log.Ltime | log.Lmicroseconds | log.Lshortfile)
 
 	if showVersion {
 		version()
@@ -88,6 +87,7 @@ func main() {
 		go pull(repodir, results)
 	}
 	wg.Wait()
+
 	// we retry the pulls that failed, sequentially this time:
 	for repodir, result := range results {
 		if result.pullSuccess == false {
@@ -97,15 +97,22 @@ func main() {
 		}
 	}
 	wipeLine()
-	fmt.Print("Processing...")
+
+	fmt.Print("Processing..")
 	for repodir, result := range results {
+		os.Stdout.WriteString(".")
+		// WHY? did I decide to do another 'git status' here????
+		/*
 		pullSuccess := results[repodir].pullSuccess
 		pullOut := results[repodir].pullOutput
+		statusOut := results[repodir].statusOutput
 		var statusOut []byte
 		if statusOut, err = getStatus(repodir, results); err != nil {
 			log.Fatal(err)
 		}
 		results[repodir] = Result{pullSuccess, pullOut, statusOut}
+		*/
+		log.Println("result before processRepositoryStatus:", result)
 		processRepositoryStatus(repodir, result)
 	}
 	wipeLine()
@@ -116,14 +123,6 @@ func main() {
 		ternary(len(gitdirs) > 1, "ies", "y"),
 		time.Now().Sub(start))
 	log.Println("=== END OF MAIN ===\n")
-}
-
-func getStatus(repodir string, results map[string]Result) (output []byte, err error) {
-	args := []string{"status", "-sb"}
-	if output, err = git(repodir, args...); err != nil {
-		return
-	}
-	return
 }
 
 func getGitDirs(inputs []string) (err error) {
@@ -155,4 +154,14 @@ func addGitDir(item string, finfo os.FileInfo, errin error) (err error) {
 func version() {
 	fmt.Printf("%s - v.%s (c) Lyderic Landry, London 2018\n",
 		APPNAME, VERSION)
+}
+
+func initlog(logfile *os.File, logpath string) (err error) {
+	if logfile, err = os.Create(logpath); err != nil {
+		fmt.Printf("cannot log to %q, please choose another file with --log\n", logpath)
+		return
+	}
+	log.SetOutput(logfile)
+	log.SetFlags(log.Ltime | log.Lmicroseconds | log.Lshortfile)
+	return
 }
