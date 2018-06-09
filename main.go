@@ -1,6 +1,8 @@
 /* TODO
 --- inputs should be a set i.e. if a directory is passed twice (or a symlink...), it
     should be pulled only once.
+--- when one cannot pull a repository because the ssh key is missing or the passphrase needs
+    to be provided, the process should skip, not wait forever until Ctrl-C
 */
 package main
 

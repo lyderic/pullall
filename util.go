@@ -33,13 +33,6 @@ func sanitize(inputs []string) (output []string, err error) {
 	return
 }
 
-func git(repodir string, a ...string) (output []byte, err error) {
-	args := []string{"-C", repodir}
-	args = append(args, a...)
-	cmd := exec.Command("git", args...)
-	return cmd.CombinedOutput()
-}
-
 func checkBinaries(binaries ...string) {
 	for _, binary := range binaries {
 		_, e := exec.LookPath(binary)
