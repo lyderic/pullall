@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"path"
 	"time"
 )
 
@@ -26,6 +28,8 @@ func pull(repodir string, results map[string]Result) (err error) {
 		results[repodir] = Result{true, pullOut, statusOut}
 	}
 	lock.Unlock()
-	log.Printf("%s pulled in %s\n", repodir, time.Now().Sub(start))
+	message := fmt.Sprintf("%q pulled in %s", path.Base(repodir), time.Now().Sub(start))
+	//fmt.Print(message)
+	log.Println(message)
 	return
 }

@@ -45,10 +45,6 @@ func git(repodir string, a ...string) (output []byte, err error) {
 	return cmd.CombinedOutput()
 }
 
-func printRed(message string) {
-	fmt.Printf("\033[31m%s\033[0m\n", message)
-}
-
 func getTermWidth() (w int, err error) {
 	if _, w, err = getTermDim(); err != nil {
 		return
@@ -78,4 +74,18 @@ func checkBinaries(binaries ...string) {
 			log.Fatalf("%s executable not found in path! Aborting...", binary)
 		}
 	}
+}
+
+func ternary(condition bool, a, b interface{}) interface{} {
+	if condition {
+		return a
+	}
+	return b
+}
+
+func less(s string) (err error) {
+	less := exec.Command("less", "-FRIX")
+	less.Stdin = strings.NewReader(s)
+	less.Stdout, less.Stderr = os.Stdout, os.Stdout
+	return less.Run()
 }

@@ -1,9 +1,6 @@
 /* TODO
 --- leaner main file (shorter functions, split into more files)
 --- don't pass big result map on each goroutine! don't lock it!
---- don't retry every repo! only the ones that fail, in the same goroutine
---- pipe results to less
---- provide a --log option to debug and see what's going on
 */
 package main
 
@@ -15,6 +12,7 @@ import (
 	"path"
 	"path/filepath"
 	"sync"
+	"time"
 )
 
 var (
@@ -27,14 +25,14 @@ var (
 func init() {
 	var err error
 	log.SetFlags(log.Ltime | log.Lmicroseconds | log.Lshortfile)
-	checkBinaries("git", "stty")
+	checkBinaries("git", "stty", "less")
 	if termWidth, err = getTermWidth(); err != nil {
 		termWidth = 80 // *very* conservative
 	}
 }
 
 func main() {
-
+	start := time.Now()
 	var err error
 	var showVersion bool
 	logpath := filepath.Join(os.TempDir(), "pullall.log")
@@ -44,7 +42,7 @@ func main() {
 
 	var logfile *os.File
 	if logfile, err = os.Create(logpath); err != nil {
-		fmt.Printf("cannot log to %q, please choose another file with --log", logpath)
+		fmt.Printf("cannot log to %q, please choose another file with --log\n", logpath)
 		log.Fatal(err)
 	}
 	defer logfile.Close()
@@ -70,19 +68,20 @@ func main() {
 	}
 	log.Println("basedirs:", basedirs)
 
-	fmt.Print("Looking for .git directories...")
+	fmt.Print("Looking for .git directories..")
 	getGitDirs(basedirs)
 	wipeLine()
-	log.Println("gitdirs:", gitdirs)
-
 	if len(gitdirs) == 0 {
-		fmt.Println("git repository not found")
+		fmt.Println("no git repository found in", inputs)
 		os.Exit(1)
 	}
 
 	results := make(map[string]Result)
 
-	fmt.Print("Pulling repositories..")
+	fmt.Printf("Pulling %d repositor%s..",
+		len(gitdirs),
+		ternary(len(gitdirs) > 1, "ies", "y"),
+	)
 	for _, gitdir := range gitdirs {
 		wg.Add(1)
 		repodir := filepath.Dir(gitdir)
@@ -90,16 +89,15 @@ func main() {
 	}
 	wg.Wait()
 	// we retry the pulls that failed, sequentially this time:
-	// this is not toooo bad as we don't expect much first pulls to have failed
 	for repodir, result := range results {
 		if result.pullSuccess == false {
 			wg.Add(1)
-			log.Println("We are retrying:", repodir)
+			log.Println("Retrying:", repodir)
 			pull(repodir, results)
 		}
 	}
 	wipeLine()
-
+	fmt.Print("Processing...")
 	for repodir, result := range results {
 		pullSuccess := results[repodir].pullSuccess
 		pullOut := results[repodir].pullOutput
@@ -108,10 +106,15 @@ func main() {
 			log.Fatal(err)
 		}
 		results[repodir] = Result{pullSuccess, pullOut, statusOut}
-		displayRepositoryStatus(repodir, result)
+		processRepositoryStatus(repodir, result)
 	}
+	wipeLine()
+	less(accumulator.String())
 
-	log.Println(inputs, "all pulled")
+	log.Printf("Processed %d repositor%s in %s\n",
+		len(gitdirs),
+		ternary(len(gitdirs) > 1, "ies", "y"),
+		time.Now().Sub(start))
 	log.Println("=== END OF MAIN ===\n")
 }
 
@@ -124,11 +127,15 @@ func getStatus(repodir string, results map[string]Result) (output []byte, err er
 }
 
 func getGitDirs(inputs []string) (err error) {
+	start := time.Now()
 	for _, input := range inputs {
 		if err = filepath.Walk(input, addGitDir); err != nil {
 			return
 		}
 	}
+	log.Printf("Got %d git dir%s in %s\n", len(gitdirs),
+		ternary(len(gitdirs) > 1, "s", ""),
+		time.Now().Sub(start))
 	return
 }
 
@@ -139,6 +146,7 @@ func addGitDir(item string, finfo os.FileInfo, errin error) (err error) {
 		return
 	}
 	if base == ".git" {
+		os.Stdout.Write([]byte{'.'})
 		gitdirs = append(gitdirs, abspath)
 	}
 	return

@@ -8,10 +8,12 @@ import (
 	"strings"
 )
 
-func displayRepositoryStatus(repodir string, result Result) {
-	fmt.Println(repodir)
+var accumulator strings.Builder
+
+func processRepositoryStatus(repodir string, result Result) {
+	addln(repodir)
 	if !result.pullSuccess {
-		printRed("--> incorrectly pulled!")
+		addln(red("--> incorrectly pulled!"))
 		return
 	}
 	pullScanner := bufio.NewScanner(bytes.NewReader(result.pullOutput))
@@ -22,19 +24,32 @@ func displayRepositoryStatus(repodir string, result Result) {
 		if match {
 			continue
 		} else {
-			printRed(line)
+			addln(red(line))
 		}
 	}
 	for statusScanner.Scan() {
 		line := statusScanner.Text()
 		if strings.HasPrefix(line, "##") {
 			if strings.Contains(line, "[") {
-				printRed(strings.ToUpper(line[26:]))
+				addln(red(strings.ToUpper(line[26:])))
 			} else {
 				continue
 			}
 		} else {
-			printRed(line)
+			add(red(line))
 		}
 	}
+}
+
+func addln(message string) {
+	accumulator.WriteString(message)
+	accumulator.WriteString("\n")
+}
+
+func add(message string) {
+	accumulator.WriteString(message)
+}
+
+func red(message string) string {
+	return fmt.Sprintf("\033[31m%s\033[0m\n", message)
 }
