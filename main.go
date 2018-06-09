@@ -84,7 +84,7 @@ func main() {
 	for _, gitdir := range gitdirs {
 		wg.Add(1)
 		repodir := filepath.Dir(gitdir)
-		go pull(repodir)
+		go actualise(repodir)
 	}
 	wg.Wait()
 

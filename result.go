@@ -9,27 +9,31 @@ import (
 )
 
 type Result struct {
-	pullSuccess  bool
-	pullOutput   []byte
-	statusOutput []byte
+	repodir       string
+	reponame      string
+	pullSuccess   bool
+	statusSuccess bool
+	pullOutput    []byte
+	statusOutput  []byte
 }
 
 func (r Result) String() string {
-	return fmt.Sprintf(" PullSuccess: %t\n pullOutput: %s\n statusOutput: %s",
+	return fmt.Sprintf("Result{pullSuccess: %t - statusSuccess: \t\n pullOutput: %s\n statusOutput: %s",
+		r.statusSuccess,
 		r.pullSuccess,
 		string(r.pullOutput),
 		string(r.statusOutput),
 	)
 }
 
-func processResult(repodir string, result Result) {
-	addln(repodir)
-	if !result.pullSuccess {
+func (r Result) process() {
+	addln(r.repodir)
+	if !r.pullSuccess {
 		addln(red("--> incorrectly pulled!"))
 		return
 	}
-	pullScanner := bufio.NewScanner(bytes.NewReader(result.pullOutput))
-	statusScanner := bufio.NewScanner(bytes.NewReader(result.statusOutput))
+	pullScanner := bufio.NewScanner(bytes.NewReader(r.pullOutput))
+	statusScanner := bufio.NewScanner(bytes.NewReader(r.statusOutput))
 	for pullScanner.Scan() {
 		line := pullScanner.Text()
 		match, _ := regexp.MatchString("(?i)already up.*to.*date.*", line)
