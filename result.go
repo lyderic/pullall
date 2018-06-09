@@ -54,7 +54,9 @@ func (r Result) process() {
 }
 
 func (r Result) String() string {
-	return fmt.Sprintf("Result{\n  • pullSuccess: %t\n  • statusSuccess: %t\n  • pullOutput: %q\n  • statusOutput: %q\n}",
+	return fmt.Sprintf("Result{\n  • repodir: %s\n  • reponame: %s\n  • pullSuccess: %t\n  • statusSuccess: %t\n  • pullOutput: %q\n  • statusOutput: %q\n}",
+		r.repodir,
+		r.reponame,
 		r.pullSuccess,
 		r.statusSuccess,
 		string(r.pullOutput),
