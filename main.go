@@ -44,15 +44,15 @@ func main() {
 	flag.StringVar(&logpath, "log", logpath, "log file")
 	flag.Parse()
 
+	if showVersion {
+		version()
+		return
+	}
+
 	var logfile *os.File
 	defer logfile.Close()
 	if err = initlog(logfile); err != nil {
 		log.Fatal(err)
-	}
-
-	if showVersion {
-		version()
-		return
 	}
 
 	inputs := []string{"."}
