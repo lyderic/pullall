@@ -30,6 +30,6 @@ func actualise(repodir string) {
 	}
 	result.statusOutput = statusOut
 	result.process()
-	message := fmt.Sprintf("%q pulled in %s", path.Base(repodir), time.Now().Sub(start))
+	message := fmt.Sprintf("%q actualised in %s", path.Base(repodir), time.Now().Sub(start))
 	log.Println(message)
 }
