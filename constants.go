@@ -2,5 +2,5 @@ package main
 
 const (
 	APPNAME = "pullall"
-	VERSION = "0.2.7"
+	VERSION = "0.2.8"
 )
