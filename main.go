@@ -1,3 +1,10 @@
+/* TODO
+--- leaner main file (shorter functions, split into more files)
+--- don't pass big result map on each goroutine! don't lock it!
+--- don't retry every repo! only the ones that fail, in the same goroutine
+--- pipe results to less
+--- provide a --log option to debug and see what's going on
+*/
 package main
 
 import (
@@ -18,40 +25,55 @@ var (
 )
 
 func init() {
-	log.SetFlags(log.Lshortfile)
-	checkBinaries("git", "stty")
 	var err error
+	log.SetFlags(log.Ltime | log.Lmicroseconds | log.Lshortfile)
+	checkBinaries("git", "stty")
 	if termWidth, err = getTermWidth(); err != nil {
-		termWidth = 80 // to be *very* conservative
+		termWidth = 80 // *very* conservative
 	}
-
 }
 
 func main() {
 
 	var err error
 	var showVersion bool
-	flag.BoolVar(&showVersion, "V", false, "show version")
+	logpath := filepath.Join(os.TempDir(), "pullall.log")
+	flag.BoolVar(&showVersion, "version", false, "show version")
+	flag.StringVar(&logpath, "log", logpath, "log file")
 	flag.Parse()
 
+	var logfile *os.File
+	if logfile, err = os.Create(logpath); err != nil {
+		fmt.Printf("cannot log to %q, please choose another file with --log", logpath)
+		log.Fatal(err)
+	}
+	defer logfile.Close()
+	log.SetOutput(logfile)
+	log.SetFlags(log.Ltime | log.Lmicroseconds | log.Lshortfile)
+
 	if showVersion {
-		fmt.Printf("%s - v.%s (c) Lyderic Landry, London 2018\n",
-			APPNAME, VERSION)
+		version()
+		return
 	}
 
 	inputs := []string{"."}
 	if len(flag.Args()) > 0 {
 		inputs = flag.Args()
 	}
+	log.Println("inputs:", inputs)
 
 	var basedirs []string
 	if basedirs, err = sanitize(inputs); err != nil {
+		fmt.Println("input not valid:", inputs)
+		fmt.Println(err)
 		log.Fatal(err)
 	}
+	log.Println("basedirs:", basedirs)
 
 	fmt.Print("Looking for .git directories...")
 	getGitDirs(basedirs)
 	wipeLine()
+	log.Println("gitdirs:", gitdirs)
 
 	if len(gitdirs) == 0 {
 		fmt.Println("git repository not found")
@@ -68,9 +90,11 @@ func main() {
 	}
 	wg.Wait()
 	// we retry the pulls that failed, sequentially this time:
+	// this is not toooo bad as we don't expect much first pulls to have failed
 	for repodir, result := range results {
 		if result.pullSuccess == false {
 			wg.Add(1)
+			log.Println("We are retrying:", repodir)
 			pull(repodir, results)
 		}
 	}
@@ -87,6 +111,8 @@ func main() {
 		displayRepositoryStatus(repodir, result)
 	}
 
+	log.Println(inputs, "all pulled")
+	log.Println("=== END OF MAIN ===\n")
 }
 
 func pull(repodir string, results map[string]Result) (err error) {
@@ -101,7 +127,7 @@ func pull(repodir string, results map[string]Result) (err error) {
 	if statusOut, err = getStatus(repodir, results); err != nil {
 		return
 	}
-	lock.Lock()
+	lock.Lock() // this lock is a problem and I think it can be resolved with a pointer to this map
 	if err != nil {
 		results[repodir] = Result{false, pullOut, statusOut}
 	} else {
@@ -138,4 +164,9 @@ func addGitDir(item string, finfo os.FileInfo, errin error) (err error) {
 		gitdirs = append(gitdirs, abspath)
 	}
 	return
+}
+
+func version() {
+	fmt.Printf("%s - v.%s (c) Lyderic Landry, London 2018\n",
+		APPNAME, VERSION)
 }
