@@ -29,9 +29,7 @@ func actualise(repodir string) {
 		result.statusSuccess = false
 	}
 	result.statusOutput = statusOut
-	result.pullSuccess = true
 	result.process()
 	message := fmt.Sprintf("%q pulled in %s", path.Base(repodir), time.Now().Sub(start))
-	//fmt.Println(message)
 	log.Println(message)
 }

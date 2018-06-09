@@ -18,6 +18,7 @@ import (
 
 // Globals
 var (
+	logpath     = filepath.Join(os.TempDir(), "pullall.log") // default, can be set with --log flag
 	termWidth   int
 	gitdirs     []string
 	accumulator strings.Builder
@@ -26,9 +27,9 @@ var (
 )
 
 func init() {
+	checkBinaries("git", "stty", "less")
 	var err error
 	log.SetFlags(log.Ltime | log.Lmicroseconds | log.Lshortfile)
-	checkBinaries("git", "stty", "less")
 	if termWidth, err = getTermWidth(); err != nil {
 		termWidth = 80 // *very* conservative
 	}
@@ -39,14 +40,13 @@ func main() {
 	start := time.Now()
 	var err error
 	var showVersion bool
-	logpath := filepath.Join(os.TempDir(), "pullall.log")
 	flag.BoolVar(&showVersion, "version", false, "show version")
 	flag.StringVar(&logpath, "log", logpath, "log file")
 	flag.Parse()
 
 	var logfile *os.File
 	defer logfile.Close()
-	if err = initlog(logfile, logpath); err != nil {
+	if err = initlog(logfile); err != nil {
 		log.Fatal(err)
 	}
 
@@ -129,7 +129,7 @@ func version() {
 		APPNAME, VERSION)
 }
 
-func initlog(logfile *os.File, logpath string) (err error) {
+func initlog(logfile *os.File) (err error) {
 	if logfile, err = os.Create(logpath); err != nil {
 		fmt.Printf("cannot log to %q, please choose another file with --log\n", logpath)
 		return

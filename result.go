@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 )
@@ -17,19 +18,14 @@ type Result struct {
 	statusOutput  []byte
 }
 
-func (r Result) String() string {
-	return fmt.Sprintf("Result{pullSuccess: %t - statusSuccess: \t\n pullOutput: %s\n statusOutput: %s",
-		r.statusSuccess,
-		r.pullSuccess,
-		string(r.pullOutput),
-		string(r.statusOutput),
-	)
-}
-
 func (r Result) process() {
 	addln(r.repodir)
 	if !r.pullSuccess {
-		addln(red("--> incorrectly pulled!"))
+		reportFail("pull", r)
+		return
+	}
+	if !r.statusSuccess {
+		reportFail("status", r)
 		return
 	}
 	pullScanner := bufio.NewScanner(bytes.NewReader(r.pullOutput))
@@ -57,6 +53,15 @@ func (r Result) process() {
 	}
 }
 
+func (r Result) String() string {
+	return fmt.Sprintf("Result{\n  • pullSuccess: %t\n  • statusSuccess: %t\n  • pullOutput: %q\n  • statusOutput: %q\n}",
+		r.pullSuccess,
+		r.statusSuccess,
+		string(r.pullOutput),
+		string(r.statusOutput),
+	)
+}
+
 func add(message string) {
 	accumulator.WriteString(message)
 }
@@ -68,4 +73,9 @@ func addln(message string) {
 
 func red(message string) string {
 	return fmt.Sprintf("\033[31m%s\033[0m", message)
+}
+
+func reportFail(action string, r Result) {
+	addln(red(fmt.Sprintf("--> git %s failed: see log file: %q", action, logpath)))
+	log.Printf("git %s failed for:\n%s", action, r)
 }
