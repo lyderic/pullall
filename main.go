@@ -1,6 +1,6 @@
 /* TODO
---- leaner main file (shorter functions, split into more files)
---- don't pass big result map on each goroutine! don't lock it!
+--- inputs should be a set i.e. if a directory is passed twice (or a symlink...), it
+    should be pulled only once.
 */
 package main
 
@@ -16,6 +16,7 @@ import (
 	"time"
 )
 
+// Globals
 var (
 	termWidth   int
 	gitdirs     []string
@@ -34,6 +35,7 @@ func init() {
 }
 
 func main() {
+
 	start := time.Now()
 	var err error
 	var showVersion bool
@@ -75,8 +77,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	results := make(map[string]Result)
-
 	fmt.Printf("Pulling %d repositor%s..",
 		len(gitdirs),
 		ternary(len(gitdirs) > 1, "ies", "y"),
@@ -84,38 +84,10 @@ func main() {
 	for _, gitdir := range gitdirs {
 		wg.Add(1)
 		repodir := filepath.Dir(gitdir)
-		go pull(repodir, results)
+		go pull(repodir)
 	}
 	wg.Wait()
 
-	// we retry the pulls that failed, sequentially this time:
-	for repodir, result := range results {
-		if result.pullSuccess == false {
-			wg.Add(1)
-			log.Println("Retrying:", repodir)
-			pull(repodir, results)
-		}
-	}
-	wipeLine()
-
-	fmt.Print("Processing..")
-	for repodir, result := range results {
-		os.Stdout.WriteString(".")
-		// WHY? did I decide to do another 'git status' here????
-		/*
-		pullSuccess := results[repodir].pullSuccess
-		pullOut := results[repodir].pullOutput
-		statusOut := results[repodir].statusOutput
-		var statusOut []byte
-		if statusOut, err = getStatus(repodir, results); err != nil {
-			log.Fatal(err)
-		}
-		results[repodir] = Result{pullSuccess, pullOut, statusOut}
-		*/
-		log.Println("result before processRepositoryStatus:", result)
-		processRepositoryStatus(repodir, result)
-	}
-	wipeLine()
 	less(accumulator.String())
 
 	log.Printf("Processed %d repositor%s in %s\n",

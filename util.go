@@ -6,12 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 )
-
-func init() {
-	log.SetFlags(log.Lshortfile)
-}
 
 /* make sure we work with absolute paths and the symlinks are resolved */
 func sanitize(inputs []string) (output []string, err error) {
@@ -45,28 +40,6 @@ func git(repodir string, a ...string) (output []byte, err error) {
 	return cmd.CombinedOutput()
 }
 
-func getTermWidth() (w int, err error) {
-	if _, w, err = getTermDim(); err != nil {
-		return
-	}
-	return
-}
-
-func getTermDim() (h, w int, err error) {
-	cmd := exec.Command("stty", "size")
-	cmd.Stdin = os.Stdin
-	var termDim []byte
-	if termDim, err = cmd.Output(); err != nil {
-		return
-	}
-	fmt.Sscan(string(termDim), &h, &w)
-	return
-}
-
-func wipeLine() {
-	fmt.Printf("\r%s\r", strings.Repeat(" ", termWidth))
-}
-
 func checkBinaries(binaries ...string) {
 	for _, binary := range binaries {
 		_, e := exec.LookPath(binary)
@@ -81,11 +54,4 @@ func ternary(condition bool, a, b interface{}) interface{} {
 		return a
 	}
 	return b
-}
-
-func less(s string) (err error) {
-	less := exec.Command("less", "-FRIX")
-	less.Stdin = strings.NewReader(s)
-	less.Stdout, less.Stderr = os.Stdout, os.Stdout
-	return less.Run()
 }
