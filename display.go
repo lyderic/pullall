@@ -60,7 +60,6 @@ func less(s string) (err error) {
 }
 
 func color(color int, message string) string {
-	//return fmt.Sprintf("\033[%dm%s\033[0m", color, message)
 	return fmt.Sprintf("\033[%dm%s\033[0m", color, message)
 }
 

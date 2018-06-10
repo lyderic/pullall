@@ -74,6 +74,13 @@ func addln(message string) {
 }
 
 func reportFail(action string, r Result) {
-	addln(red(fmt.Sprintf("--> git %s failed: see log file: %q", action, logpath)))
+	addln(red(fmt.Sprintf("⯁ git %s failed:", action)))
+	scanner := bufio.NewScanner(bytes.NewReader(r.pullOutput))
+	for scanner.Scan() {
+		line := scanner.Text()
+		if len(line) > 0 {
+			addln(red(line))
+		}
+	}
 	log.Printf("git %s failed for:\n%s", action, r)
 }

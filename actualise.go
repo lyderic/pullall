@@ -25,6 +25,7 @@ func actualise(repodir string) {
 		if pullOut, err = git(repodir, pullArgs...); err != nil {
 			log.Printf("%q didn't recover", result.reponame)
 			result.pullSuccess = false
+			result.pullOutput = pullOut
 			result.process()
 			return
 		} else {
