@@ -14,11 +14,12 @@ const (
 	BLACK   = 30
 	RED     = 31
 	GREEN   = 32
-	YELLOW  = 33
+	ORANGE  = 33
 	BLUE    = 34
 	MAGENTA = 35
 	CYAN    = 36
 	WHITE   = 37
+	YELLOW  = 93
 )
 
 var termWidth int // needed for wiping the whole line
