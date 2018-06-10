@@ -7,6 +7,15 @@ import (
 	"strings"
 )
 
+var termWidth int // needed for wiping the whole line
+
+func init() {
+	var err error
+	if termWidth, err = getTermWidth(); err != nil {
+		termWidth = 80 // *very* conservative
+	}
+}
+
 func getTermWidth() (w int, err error) {
 	if _, w, err = getTermDim(); err != nil {
 		return

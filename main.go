@@ -1,4 +1,5 @@
 /* TODO
+--- get rid of the global variables, whenever possible: use pointers
 --- when one cannot pull a repository because the ssh key is missing or the passphrase needs
     to be provided, the process should skip, not wait forever until Ctrl-C
 */
@@ -18,7 +19,6 @@ import (
 // Globals
 var (
 	logpath     = filepath.Join(os.TempDir(), "pullall.log") // default, can be set with --log flag
-	termWidth   int // needed for wiping the whole line
 	accumulator strings.Builder
 	wg          sync.WaitGroup
 	lock        = sync.RWMutex{}
@@ -26,11 +26,7 @@ var (
 
 func init() {
 	checkBinaries("git", "stty", "less")
-	var err error
 	log.SetFlags(log.Ltime | log.Lmicroseconds | log.Lshortfile)
-	if termWidth, err = getTermWidth(); err != nil {
-		termWidth = 80 // *very* conservative
-	}
 }
 
 func main() {
@@ -69,8 +65,8 @@ func main() {
 
 	fmt.Print("Looking for .git directories..")
 	var gitdirs []string
-	if gitdirs,err = getGitDirs(basedirs); err != nil {
-		  return
+	if gitdirs, err = getGitDirs(basedirs); err != nil {
+		return
 	}
 	wipeLine()
 	if len(gitdirs) == 0 {
@@ -96,7 +92,8 @@ func main() {
 		len(gitdirs),
 		ternary(len(gitdirs) > 1, "ies", "y"),
 		time.Now().Sub(start))
-	log.Println("=== END OF MAIN ===\n")
+	log.Println("=== END OF MAIN ===")
+	log.Println()
 }
 
 func version() {
