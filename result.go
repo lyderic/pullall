@@ -36,19 +36,19 @@ func (r Result) process() {
 		if match {
 			continue
 		} else {
-			addln(red(line))
+			addln(blue(line))
 		}
 	}
 	for statusScanner.Scan() {
 		line := statusScanner.Text()
 		if strings.HasPrefix(line, "##") {
 			if strings.Contains(line, "[") {
-				addln(red(strings.ToUpper(line[26:])))
+				addln(yellow(strings.ToUpper(line[26:])))
 			} else {
 				continue
 			}
 		} else {
-			addln(red(line))
+			addln(blue(line))
 		}
 	}
 }
@@ -71,10 +71,6 @@ func add(message string) {
 func addln(message string) {
 	accumulator.WriteString(message)
 	accumulator.WriteString("\n")
-}
-
-func red(message string) string {
-	return fmt.Sprintf("\033[31m%s\033[0m", message)
 }
 
 func reportFail(action string, r Result) {

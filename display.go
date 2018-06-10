@@ -7,6 +7,20 @@ import (
 	"strings"
 )
 
+/*
+Possible display colors (ANSI colors)
+*/
+const (
+	BLACK   = 30
+	RED     = 31
+	GREEN   = 32
+	YELLOW  = 33
+	BLUE    = 34
+	MAGENTA = 35
+	CYAN    = 36
+	WHITE   = 37
+)
+
 var termWidth int // needed for wiping the whole line
 
 func init() {
@@ -43,4 +57,24 @@ func less(s string) (err error) {
 	less.Stdin = strings.NewReader(s)
 	less.Stdout, less.Stderr = os.Stdout, os.Stdout
 	return less.Run()
+}
+
+func color(color int, message string) string {
+	return fmt.Sprintf("\033[%dm%s\033[0m", color, message)
+}
+
+func red(message string) string {
+	return color(RED, message)
+}
+
+func green(message string) string {
+	return color(GREEN, message)
+}
+
+func blue(message string) string {
+	return color(BLUE, message)
+}
+
+func yellow(message string) string {
+	return color(YELLOW, message)
 }
