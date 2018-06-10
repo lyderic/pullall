@@ -1,6 +1,4 @@
 /* TODO
---- inputs should be a set i.e. if a directory is passed twice (or a symlink...), it
-    should be pulled only once.
 --- when one cannot pull a repository because the ssh key is missing or the passphrase needs
     to be provided, the process should skip, not wait forever until Ctrl-C
 */
@@ -11,7 +9,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -21,8 +18,7 @@ import (
 // Globals
 var (
 	logpath     = filepath.Join(os.TempDir(), "pullall.log") // default, can be set with --log flag
-	termWidth   int
-	gitdirs     []string
+	termWidth   int // needed for wiping the whole line
 	accumulator strings.Builder
 	wg          sync.WaitGroup
 	lock        = sync.RWMutex{}
@@ -72,7 +68,10 @@ func main() {
 	log.Println("basedirs:", basedirs)
 
 	fmt.Print("Looking for .git directories..")
-	getGitDirs(basedirs)
+	var gitdirs []string
+	if gitdirs,err = getGitDirs(basedirs); err != nil {
+		  return
+	}
 	wipeLine()
 	if len(gitdirs) == 0 {
 		fmt.Println("no git repository found in", inputs)
@@ -98,32 +97,6 @@ func main() {
 		ternary(len(gitdirs) > 1, "ies", "y"),
 		time.Now().Sub(start))
 	log.Println("=== END OF MAIN ===\n")
-}
-
-func getGitDirs(inputs []string) (err error) {
-	start := time.Now()
-	for _, input := range inputs {
-		if err = filepath.Walk(input, addGitDir); err != nil {
-			return
-		}
-	}
-	log.Printf("Got %d git dir%s in %s\n", len(gitdirs),
-		ternary(len(gitdirs) > 1, "s", ""),
-		time.Now().Sub(start))
-	return
-}
-
-func addGitDir(item string, finfo os.FileInfo, errin error) (err error) {
-	var base, abspath string
-	base = path.Base(item)
-	if abspath, err = filepath.Abs(item); err != nil {
-		return
-	}
-	if base == ".git" {
-		os.Stdout.Write([]byte{'.'})
-		gitdirs = append(gitdirs, abspath)
-	}
-	return
 }
 
 func version() {
