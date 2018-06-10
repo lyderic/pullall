@@ -1,4 +1,6 @@
 /* TODO
+--- in what the user sees, red should only indicate error or warning, use green or blue for
+    normal output of non repository names
 --- get rid of the global variables, whenever possible: use pointers
 --- when one cannot pull a repository because the ssh key is missing or the passphrase needs
     to be provided, the process should skip, not wait forever until Ctrl-C
@@ -74,7 +76,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Pulling %d repositor%s..",
+	fmt.Printf("Actualising %d repositor%s..",
 		len(gitdirs),
 		ternary(len(gitdirs) > 1, "ies", "y"),
 	)
