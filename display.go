@@ -78,3 +78,11 @@ func blue(message string) string {
 func yellow(message string) string {
 	return color(YELLOW, message)
 }
+
+func cyan(message string) string {
+	return color(CYAN, message)
+}
+
+func magenta(message string) string {
+	return color(MAGENTA, message)
+}

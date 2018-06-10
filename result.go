@@ -36,7 +36,7 @@ func (r Result) process() {
 		if match {
 			continue
 		} else {
-			addln(blue(line))
+			addln(green(line))
 		}
 	}
 	for statusScanner.Scan() {
