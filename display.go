@@ -14,12 +14,11 @@ const (
 	BLACK   = 30
 	RED     = 31
 	GREEN   = 32
-	ORANGE  = 33
+	YELLOW  = 33
 	BLUE    = 34
 	MAGENTA = 35
 	CYAN    = 36
 	WHITE   = 37
-	YELLOW  = 93
 )
 
 var termWidth int // needed for wiping the whole line
@@ -61,6 +60,7 @@ func less(s string) (err error) {
 }
 
 func color(color int, message string) string {
+	//return fmt.Sprintf("\033[%dm%s\033[0m", color, message)
 	return fmt.Sprintf("\033[%dm%s\033[0m", color, message)
 }
 

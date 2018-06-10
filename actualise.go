@@ -20,7 +20,16 @@ func actualise(repodir string) {
 	var pullOut []byte
 	pullArgs := []string{"pull"}
 	if pullOut, err = git(repodir, pullArgs...); err != nil {
-		result.pullSuccess = false
+		log.Printf("first pulling of %q failed....", result.reponame)
+		time.Sleep(1000 * time.Millisecond)
+		if pullOut, err = git(repodir, pullArgs...); err != nil {
+			log.Printf("%q didn't recover", result.reponame)
+			result.pullSuccess = false
+			result.process()
+			return
+		} else {
+			log.Printf("%q successfully revovered", result.reponame)
+		}
 	}
 	result.pullOutput = pullOut
 	var statusOut []byte
@@ -30,6 +39,8 @@ func actualise(repodir string) {
 	}
 	result.statusOutput = statusOut
 	result.process()
-	message := fmt.Sprintf("%q actualised in %s", path.Base(repodir), time.Now().Sub(start))
+	message := fmt.Sprintf("%q actualised in %s",
+		path.Base(repodir),
+		time.Now().Sub(start))
 	log.Println(message)
 }
