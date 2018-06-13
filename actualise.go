@@ -9,9 +9,9 @@ import (
 )
 
 func actualise(repodir string) {
-	var err error
 	start := time.Now()
-	defer os.Stdout.WriteString(".")
+	var err error
+	defer os.Stdout.WriteString(fmt.Sprintf("#%03d\b\b\b\b", counter))
 	defer wg.Done()
 	var repository Repository
 	repository.repodir = repodir

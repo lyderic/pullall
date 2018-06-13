@@ -18,10 +18,10 @@ import (
 
 // Globals
 var (
-	logpath     = filepath.Join(os.TempDir(), "pullall.log") // default, can be set with --log flag
+	logpath     = filepath.Join(os.TempDir(), "pullall.log")
 	accumulator strings.Builder
 	wg          sync.WaitGroup
-	lock        = sync.RWMutex{}
+	counter     int
 )
 
 func init() {
@@ -49,48 +49,33 @@ func main() {
 		log.Fatal(err)
 	}
 
-	inputs := []string{"."}
+	dir := "."
 	if len(flag.Args()) > 0 {
-		inputs = flag.Args()
+		dir = flag.Args()[0]
 	}
-	log.Println("inputs:", inputs)
+	log.Println("dir:", dir)
 
-	var basedirs []string
-	if basedirs, err = sanitize(inputs); err != nil {
-		fmt.Println("input not valid:", inputs)
+	var basedir string
+	if basedir, err = sanitize(dir); err != nil {
+		fmt.Println("input not valid:", dir)
 		fmt.Println(err)
 		log.Fatal(err)
 	}
-	log.Println("basedirs:", basedirs)
-
-	fmt.Print("Looking for .git directories..")
-	var gitdirs []string
-	if gitdirs, err = getGitDirs(basedirs); err != nil {
+	fmt.Print("Please wait, actualising repository ")
+	hideCursor()
+	if err = walkBasedir(basedir); err != nil {
 		return
 	}
 	wipeLine()
-	if len(gitdirs) == 0 {
-		fmt.Println("no git repository found in", inputs)
-		os.Exit(1)
+	showCursor()
+	if counter == 0 {
+		fmt.Println("no git repository found in", basedir)
+	} else {
+		less(accumulator.String())
 	}
-
-	fmt.Printf("Actualising %d repositor%s..",
-		len(gitdirs),
-		ternary(len(gitdirs) > 1, "ies", "y"),
-	)
-	for _, gitdir := range gitdirs {
-		wg.Add(1)
-		repodir := filepath.Dir(gitdir)
-		go actualise(repodir)
-	}
-	wg.Wait()
-
-	wipeLine()
-	less(accumulator.String())
 
 	log.Printf("Processed %d repositor%s in %s\n",
-		len(gitdirs),
-		ternary(len(gitdirs) > 1, "ies", "y"),
+		counter, ternary(counter > 1, "ies", "y"),
 		time.Now().Sub(start))
 	log.Println("=== END OF MAIN ===")
 	log.Println()

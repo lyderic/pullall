@@ -8,27 +8,25 @@ import (
 	"path/filepath"
 )
 
-/* make sure we work with absolute paths and the symlinks are resolved */
-func sanitize(inputs []string) (output []string, err error) {
-	for _, input := range inputs {
-		var absoluteInput, resolvedsymlink, basedir string
-		if absoluteInput, err = filepath.Abs(input); err != nil {
-			return
-		}
-		if resolvedsymlink, err = filepath.EvalSymlinks(absoluteInput); err != nil {
-			return
-		}
-		if basedir, err = filepath.Abs(resolvedsymlink); err != nil {
-			return
-		}
-		var basedirinfo os.FileInfo
-		if basedirinfo, err = os.Stat(input); os.IsNotExist(err) {
-			return
-		}
-		if !basedirinfo.IsDir() {
-			return output, fmt.Errorf("not a dir")
-		}
-		output = append(output, basedir)
+/* make sure we work with absolute paths, the symlinks are resolved and
+   there is no duplicates */
+func sanitize(dir string) (cleandir string, err error) {
+	var absolutePath, resolvedSymlink string
+	if absolutePath, err = filepath.Abs(dir); err != nil {
+		return
+	}
+	if resolvedSymlink, err = filepath.EvalSymlinks(absolutePath); err != nil {
+		return
+	}
+	if cleandir, err = filepath.Abs(resolvedSymlink); err != nil {
+		return
+	}
+	var finfo os.FileInfo
+	if finfo, err = os.Stat(cleandir); os.IsNotExist(err) {
+		return
+	}
+	if !finfo.IsDir() {
+		return cleandir, fmt.Errorf("%q: not a directory", cleandir)
 	}
 	return
 }
