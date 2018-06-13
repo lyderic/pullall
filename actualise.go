@@ -13,33 +13,33 @@ func actualise(repodir string) {
 	start := time.Now()
 	defer os.Stdout.WriteString(".")
 	defer wg.Done()
-	var result Result
-	result.repodir = repodir
-	result.reponame = path.Base(repodir)
-	result.pullSuccess, result.statusSuccess = true, true
+	var repository Repository
+	repository.repodir = repodir
+	repository.reponame = path.Base(repodir)
+	repository.pullSuccess, repository.statusSuccess = true, true
 	var pullOut []byte
 	pullArgs := []string{"pull"}
 	if pullOut, err = git(repodir, pullArgs...); err != nil {
-		log.Printf("first pulling of %q failed....", result.reponame)
+		log.Printf("first pulling of %q failed....", repository.reponame)
 		time.Sleep(1000 * time.Millisecond)
 		if pullOut, err = git(repodir, pullArgs...); err != nil {
-			log.Printf("%q didn't recover", result.reponame)
-			result.pullSuccess = false
-			result.pullOutput = pullOut
-			result.process()
+			log.Printf("%q didn't recover", repository.reponame)
+			repository.pullSuccess = false
+			repository.pullOutput = pullOut
+			repository.process()
 			return
 		} else {
-			log.Printf("%q successfully revovered", result.reponame)
+			log.Printf("%q successfully revovered", repository.reponame)
 		}
 	}
-	result.pullOutput = pullOut
+	repository.pullOutput = pullOut
 	var statusOut []byte
 	statusArgs := []string{"status", "-sb"}
 	if statusOut, err = git(repodir, statusArgs...); err != nil {
-		result.statusSuccess = false
+		repository.statusSuccess = false
 	}
-	result.statusOutput = statusOut
-	result.process()
+	repository.statusOutput = statusOut
+	repository.process()
 	message := fmt.Sprintf("%q actualised in %s",
 		path.Base(repodir),
 		time.Now().Sub(start))
