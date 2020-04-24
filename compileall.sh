@@ -1,3 +1,5 @@
+export GOBIN=$HOME/go/bin
+
 echo "linux amd64"
 GOOS=linux GOARCH=amd64 go install
 
